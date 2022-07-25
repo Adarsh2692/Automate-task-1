@@ -1,30 +1,33 @@
 require("chromedriver");
+require("geckodriver");
 
 let {By, Builder, Key, until, Capability} = require("selenium-webdriver");
-let {browserstack_user, browserstack_key} = require("../store")
+const prompt = require("prompt-sync")({ sigint: true });
 
-// var capabilities = {
-//     "os" : "Windows",
-//     "os_version" : "10",
-//     "browserName" : "Chrome",
-//     "browser_version" : "latest",
-//     "project" : "Bstack Demo test",
-//     "name" : "Bstack Demo test",
-//     "browserstack.local" : "false",
-//     "browserstack.networkLogs" : "true",
-//     "browserstack.selenium_version" : "3.14.0",
-//     "browserstack.user" : browserstack_user,
-//     "browserstack.key" : browserstack_key
-// }
+let browserstack_user = prompt("Enter username: ");
+let browserstack_key = prompt("Enter access key: ");
+let parallel_status = prompt("Run parallel configurations (yes or no): ");
 
-const capabilities = [
+var capability1 = {
+    "os" : "Windows",
+    "os_version" : "10",
+    "browserName" : "Firefox",
+    "browser_version" : "latest",
+    "project" : "Bstack Demo test",
+    "name" : "Bstack Demo test",
+    "browserstack.local" : "false",
+    "browserstack.networkLogs" : "true",
+    "browserstack.selenium_version" : "3.14.0",
+}
+
+const capability2 = [
     {
         'device' : 'Samsung Galaxy S22 Ultra',
         'realMobile' : 'true',
         'os_version' : '12.0',
         'browserName' : 'android',
-        'name': 'BStack-[NodeJS] Sample Test', // test name
-        'build': 'BStack demo', // CI/CD job or build name
+        'name': 'BStack-[NodeJS] Sample Test',
+        'build': 'BStack demo',
         "browserstack.networkLogs" : true
     },
     {
@@ -39,8 +42,10 @@ const capabilities = [
 ]
 
 async function test(capability) {
-    // let driver = new Builder().forBrowser('chrome').build();
-    let driver = new Builder().usingServer(`https://${browserstack_user}:${browserstack_key}@hub.browserstack.com/wd/hub`).withCapabilities(capability).build();
+    let driver = new Builder()
+                     .usingServer(`https://${browserstack_user}:${browserstack_key}@hub.browserstack.com/wd/hub`)
+                     .withCapabilities(capability)
+                     .build();
 
 
     try {
@@ -103,6 +108,10 @@ async function test(capability) {
     }, 3000);
 }
 
-capabilities.map((capability) => {
-    test(capability)
-})
+if (parallel_status === "no")
+    test(capability1);
+else {
+    capability2.map((capability) => {
+        test(capability)
+    })
+}
