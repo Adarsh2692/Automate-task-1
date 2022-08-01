@@ -4,9 +4,14 @@ require("geckodriver");
 let {By, Builder, Key, until, Capability} = require("selenium-webdriver");
 const prompt = require("prompt-sync")({ sigint: true });
 
-let browserstack_user = prompt("Enter username: ");
-let browserstack_key = prompt("Enter access key: ");
-let parallel_status = prompt("Run parallel configurations (yes or no): ");
+let localDevice = prompt("Run the tests on your device? (yes or no) : ");
+let parallel_status = "no";
+let browser = "chrome";
+
+if (localDevice === "no")
+    parallel_status = prompt("Run parallel configurations? (yes or no) : ");
+else
+    browser = prompt("On what browser do you want to run your test? (chrome or firefox) : ");
 
 var capability1 = {
     "os" : "Windows",
@@ -26,8 +31,8 @@ const capability2 = [
         'realMobile' : 'true',
         'os_version' : '12.0',
         'browserName' : 'android',
-        'name': 'BStack-[NodeJS] Sample Test',
         'build': 'BStack demo',
+        'name': 'Parallel test 1',
         "browserstack.networkLogs" : true
     },
     {
@@ -35,18 +40,23 @@ const capability2 = [
         'browserName': 'Chrome',
         'browser_version': 'latest',
         'os': 'OS X',
-        'build': 'BStack-[NodeJS] Sample Build',
+        'build': 'BStack demo',
         'name': 'Parallel test 2',
         "browserstack.networkLogs" : true
       }
 ]
 
 async function test(capability) {
-    let driver = new Builder()
-                     .usingServer(`https://${browserstack_user}:${browserstack_key}@hub.browserstack.com/wd/hub`)
+    let driver;
+
+    if (localDevice === "no") {
+      driver = new Builder()
+                     .usingServer(`https://${process.env.browserstack_user}:${process.env.browserstack_key}@hub.browserstack.com/wd/hub`)
                      .withCapabilities(capability)
                      .build();
-
+    }else {
+      driver = new Builder().forBrowser(browser).build();
+    }
 
     try {
         await driver.get("https://bstackdemo.com/signin");
@@ -99,8 +109,11 @@ async function test(capability) {
 
         console.log(await message.getText());
 
+        await driver.executeScript('browserstack_executor: {"action": "setSessionStatus", "arguments": {"status":"passed","reason": "Yaay! my sample test passed"}}');
+
     } catch (err) {
         console.log(err.message)
+        await driver.executeScript('browserstack_executor: {"action": "setSessionStatus", "arguments": {"status":"failed","reason": "Oops! my sample test failed"}}');
     }
 
     setTimeout(() => {
